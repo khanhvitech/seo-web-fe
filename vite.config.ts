@@ -2,6 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import tailwindcss from "tailwindcss";
+import autoprefixer from "autoprefixer";
 
 export default defineConfig({
   plugins: [
@@ -35,6 +37,7 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     minify: 'esbuild',
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -43,6 +46,14 @@ export default defineConfig({
         }
       }
     }
+  },
+  css: {
+    postcss: {
+      plugins: [
+        tailwindcss,
+        autoprefixer,
+      ],
+    },
   },
   server: {
     fs: {
