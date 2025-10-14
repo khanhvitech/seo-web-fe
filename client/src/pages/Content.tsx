@@ -1,59 +1,187 @@
-import { ContentTable } from "@/components/ContentTable";
+import { useState } from "react";
+import { ContentSidebar } from "../components/content/ContentSidebar";
+import { ContentTable } from "../components/content/ContentTable";
+import { ContentForm } from "../components/content/ContentForm";
+import { CategoriesManagement } from "../components/content/CategoriesManagement";
+import { ImagesLibrary } from "../components/content/ImagesLibrary";
+import { AutoSources } from "../components/content/AutoSources";
+import { AIImageGenerator } from "../components/content/AIImageGenerator";
+import { ContentRewriter } from "../components/content/ContentRewriter";
+import { AIContentGenerator } from "../components/content/AIContentGenerator";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, FolderOpen } from "lucide-react";
 
+// Mock data for testing
 const mockContents = [
-  { id: '1', title: 'Hướng dẫn SEO cho người mới bắt đầu', status: 'published' as const, wordCount: 1542, seoScore: 85, createdAt: '15/03/2024' },
-  { id: '2', title: 'Top 10 công cụ Marketing 2024', status: 'scheduled' as const, wordCount: 2145, seoScore: 92, createdAt: '14/03/2024' },
-  { id: '3', title: 'Chiến lược Content Marketing hiệu quả', status: 'ready' as const, wordCount: 1876, seoScore: 78, createdAt: '13/03/2024' },
-  { id: '4', title: 'Cách tối ưu hóa website WordPress', status: 'published' as const, wordCount: 1324, seoScore: 88, createdAt: '12/03/2024' },
-  { id: '5', title: 'Email Marketing cho doanh nghiệp nhỏ', status: 'ready' as const, wordCount: 1689, seoScore: 65, createdAt: '11/03/2024' },
-  { id: '6', title: 'Social Media Marketing 2024', status: 'archived' as const, wordCount: 1452, seoScore: 71, createdAt: '10/03/2024' },
+  {
+    id: '1',
+    title: 'Hướng dẫn SEO cho người mới bắt đầu',
+    status: 'published' as const,
+    content_type: 'article' as const,
+    source_type: 'manual' as const,
+    categories: ['SEO', 'Marketing'],
+    language: 'vi',
+    word_count: 1500,
+    seo_score: 85,
+    created_at: '2024-01-15',
+    published_at: '2024-01-16'
+  },
+  {
+    id: '2',
+    title: '10 mẹo viết content marketing hiệu quả',
+    status: 'ready' as const,
+    content_type: 'article' as const,
+    source_type: 'ai' as const,
+    categories: ['Content Marketing', 'Writing'],
+    language: 'vi',
+    word_count: 2200,
+    seo_score: 72,
+    created_at: '2024-01-14'
+  },
+  {
+    id: '3',
+    title: 'Digital Marketing Strategy 2024',
+    status: 'draft' as const,
+    content_type: 'video' as const,
+    source_type: 'file' as const,
+    categories: ['Digital Marketing', 'Strategy'],
+    language: 'en',
+    word_count: 1800,
+    seo_score: 90,
+    created_at: '2024-01-13'
+  },
+  {
+    id: '4',
+    title: 'Xu hướng công nghệ 2024',
+    status: 'archived' as const,
+    content_type: 'infographic' as const,
+    source_type: 'rss' as const,
+    categories: ['Technology', 'Trends'],
+    language: 'vi',
+    word_count: 800,
+    seo_score: 65,
+    created_at: '2024-01-12',
+    published_at: '2024-01-12'
+  },
+  {
+    id: '5',
+    title: 'E-commerce Best Practices',
+    status: 'published' as const,
+    content_type: 'article' as const,
+    source_type: 'url' as const,
+    categories: ['E-commerce', 'Business'],
+    language: 'en',
+    word_count: 3200,
+    seo_score: 88,
+    created_at: '2024-01-11',
+    published_at: '2024-01-11'
+  }
 ];
 
 export default function Content() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold">Quản lý nội dung</h2>
-        <Button data-testid="button-create-content">
-          <Plus className="w-4 h-4 mr-2" />
-          Tạo nội dung mới
-        </Button>
-      </div>
+  const [activeView, setActiveView] = useState('all-content');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+  const [editingContent, setEditingContent] = useState<any>(null);
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm kiếm nội dung..."
-            className="pl-10"
-            data-testid="input-search"
+  const handleEdit = (content: any) => {
+    setEditingContent(content);
+    setShowCreateForm(true);
+  };
+
+  const renderMainContent = () => {
+    if (showCreateForm) {
+      return <ContentForm onClose={() => setShowCreateForm(false)} />;
+    }
+
+    switch (activeView) {
+      case 'all-content':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold">Tất cả nội dung</h2>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => setShowCategoriesModal(true)}>
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Quản lý danh mục
+                </Button>
+                <Button onClick={() => setShowCreateForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tạo nội dung mới
+                </Button>
+              </div>
+            </div>
+            <ContentTable 
+              contents={mockContents} 
+              onEdit={handleEdit}
+            />
+          </div>
+        );
+      case 'create':
+        return (
+          <ContentForm 
+            onClose={() => {
+              setActiveView('all-content');
+              setEditingContent(null);
+            }} 
+            editingContent={editingContent}
           />
-        </div>
-        <Select defaultValue="all">
-          <SelectTrigger className="w-48" data-testid="select-status">
-            <SelectValue placeholder="Trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="ready">Sẵn sàng</SelectItem>
-            <SelectItem value="scheduled">Đã lên lịch</SelectItem>
-            <SelectItem value="published">Đã đăng</SelectItem>
-            <SelectItem value="archived">Lưu trữ</SelectItem>
-          </SelectContent>
-        </Select>
+        );
+      case 'ai-images':
+        return <AIImageGenerator />;
+      case 'rewrite-content':
+        return <ContentRewriter />;
+      case 'ai-content':
+        return <AIContentGenerator />;
+      case 'images':
+        return <ImagesLibrary />;
+      case 'auto-sources':
+        return <AutoSources />;
+      default:
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold">Tất cả nội dung</h2>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => setShowCategoriesModal(true)}>
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Quản lý danh mục
+                </Button>
+                <Button onClick={() => setShowCreateForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tạo nội dung mới
+                </Button>
+              </div>
+            </div>
+            <ContentTable 
+              contents={mockContents} 
+              onEdit={handleEdit}
+            />
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="flex h-full">
+      <ContentSidebar 
+        activeView={activeView} 
+        onViewChange={setActiveView} 
+      />
+      <div className="flex-1 p-6">
+        {renderMainContent()}
       </div>
 
-      <ContentTable contents={mockContents} />
+      {/* Categories Management Modal */}
+      <Dialog open={showCategoriesModal} onOpenChange={setShowCategoriesModal}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Quản lý danh mục</DialogTitle>
+          </DialogHeader>
+          <CategoriesManagement />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
