@@ -1,0 +1,923 @@
+# 🚀 MÔ TẢ DỰ ÁN CHO REPLIT AGENT
+
+## 📋 THÔNG TIN TỔNG QUAN
+
+**Tên dự án:** MKT SEO Web - Auto-Publishing Platform
+**Phiên bản:** 1.0 (Foundation)
+**Mục đích:** Hệ thống tự động đăng bài lên nhiều website với công cụ SEO tích hợp
+
+---
+
+## 🏗️ KIẾN TRÚC HỆ THỐNG
+
+### **Tech Stack:**
+- **Frontend:** Next.js 14 (App Router), React 18, TypeScript, TailwindCSS, Shadcn/ui
+- **Backend:** Node.js, Express, TypeScript
+- **Database:** PostgreSQL + Prisma ORM
+- **Queue:** Bull (Redis-based)
+- **Authentication:** JWT
+
+---
+
+## 📁 CẤU TRÚC THỨ MỤC
+
+```
+mkt-seo-web/
+├── frontend/                       # Next.js Application
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── (auth)/
+│   │   │   │   ├── login/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── layout.tsx
+│   │   │   ├── (dashboard)/
+│   │   │   │   ├── dashboard/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── content/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── websites/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── scheduling/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── publishing/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── seo/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── analytics/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── notifications/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── settings/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── layout.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── components/
+│   │   │   ├── ui/                 # Shadcn components
+│   │   │   │   ├── button.tsx
+│   │   │   │   ├── card.tsx
+│   │   │   │   ├── input.tsx
+│   │   │   │   ├── table.tsx
+│   │   │   │   ├── tabs.tsx
+│   │   │   │   ├── badge.tsx
+│   │   │   │   ├── dialog.tsx
+│   │   │   │   └── ...
+│   │   │   ├── layout/
+│   │   │   │   ├── Sidebar.tsx
+│   │   │   │   ├── Header.tsx
+│   │   │   │   └── MainLayout.tsx
+│   │   │   └── shared/
+│   │   │       ├── LoadingSpinner.tsx
+│   │   │       └── EmptyState.tsx
+│   │   ├── lib/
+│   │   │   ├── api.ts              # API client (axios)
+│   │   │   └── utils.ts
+│   │   ├── hooks/
+│   │   │   └── useAuth.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   └── styles/
+│   │       └── globals.css
+│   ├── public/
+│   ├── package.json
+│   ├── next.config.js
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   └── .env.local
+│
+├── backend/
+│   ├── src/
+│   │   ├── modules/
+│   │   │   ├── auth/
+│   │   │   │   ├── auth.controller.ts
+│   │   │   │   ├── auth.service.ts
+│   │   │   │   └── auth.routes.ts
+│   │   │   ├── content/
+│   │   │   │   ├── content.controller.ts
+│   │   │   │   ├── content.service.ts
+│   │   │   │   └── content.routes.ts
+│   │   │   ├── website/
+│   │   │   │   ├── website.controller.ts
+│   │   │   │   ├── website.service.ts
+│   │   │   │   └── website.routes.ts
+│   │   │   ├── schedule/
+│   │   │   │   ├── schedule.controller.ts
+│   │   │   │   ├── schedule.service.ts
+│   │   │   │   └── schedule.routes.ts
+│   │   │   ├── publishing/
+│   │   │   │   ├── publishing.controller.ts
+│   │   │   │   ├── publishing.service.ts
+│   │   │   │   ├── queue.service.ts
+│   │   │   │   └── publishing.routes.ts
+│   │   │   └── user/
+│   │   │       ├── user.controller.ts
+│   │   │       ├── user.service.ts
+│   │   │       └── user.routes.ts
+│   │   ├── shared/
+│   │   │   ├── middleware/
+│   │   │   │   ├── auth.middleware.ts
+│   │   │   │   └── error.middleware.ts
+│   │   │   └── utils/
+│   │   │       └── password.util.ts
+│   │   ├── config/
+│   │   │   ├── database.ts
+│   │   │   └── redis.ts
+│   │   ├── prisma/
+│   │   │   └── schema.prisma
+│   │   ├── app.ts
+│   │   └── server.ts
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── .env
+│
+├── docker-compose.yml
+├── .gitignore
+└── README.md
+```
+
+---
+
+## 🗄️ DATABASE SCHEMA
+
+```prisma
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contents      Content[]
+  websites      Website[]
+  schedules     Schedule[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+model Content {
+  id          String        @id @default(uuid())
+  userId      String
+  title       String
+  body        String        @db.Text
+  excerpt     String?
+  source      ContentSource @default(MANUAL)
+  sourceUrl   String?
+  status      ContentStatus @default(READY)
+  language    String        @default("vi")
+  wordCount   Int           @default(0)
+  readingTime Int           @default(0)
+  seoScore    Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user      User        @relation(fields: [userId], references: [id])
+  schedules Schedule[]
+  media     Media[]
+  categories ContentCategory[]
+  tags      ContentTag[]
+
+  @@map("contents")
+}
+
+enum ContentSource {
+  MANUAL
+  IMPORTED
+  URL
+  RSS
+}
+
+enum ContentStatus {
+  READY
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  contents ContentCategory[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  contents ContentTag[]
+
+  @@map("tags")
+}
+
+model ContentCategory {
+  contentId  String
+  categoryId String
+
+  content  Content  @relation(fields: [contentId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@id([contentId, categoryId])
+  @@map("content_categories")
+}
+
+model ContentTag {
+  contentId String
+  tagId     String
+
+  content Content @relation(fields: [contentId], references: [id])
+  tag     Tag     @relation(fields: [tagId], references: [id])
+
+  @@id([contentId, tagId])
+  @@map("content_tags")
+}
+
+model Media {
+  id        String   @id @default(uuid())
+  contentId String?
+  url       String
+  filename  String
+  fileSize  Int
+  mimeType  String
+  altText   String?
+  createdAt DateTime @default(now())
+
+  content Content? @relation(fields: [contentId], references: [id])
+
+  @@map("media")
+}
+
+model Website {
+  id              String        @id @default(uuid())
+  userId          String
+  name            String
+  url             String
+  platform        Platform
+  status          WebsiteStatus @default(ACTIVE)
+  credentials     String        @db.Text // Encrypted JSON
+  lastHealthCheck DateTime?
+  healthStatus    String?
+  totalPosts      Int           @default(0)
+  successRate     Float         @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id])
+  schedules Schedule[]
+  config    WebsiteConfig?
+
+  @@map("websites")
+}
+
+enum Platform {
+  WORDPRESS
+  BLOGGER
+  MEDIUM
+  CUSTOM
+}
+
+enum WebsiteStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  TESTING
+}
+
+model WebsiteConfig {
+  id                    String   @id @default(uuid())
+  websiteId             String   @unique
+  defaultAuthor         String?
+  defaultCategory       String?
+  defaultTags           String?
+  titlePrefix           String?
+  titleSuffix           String?
+  featuredImageEnabled  Boolean  @default(true)
+  timezone              String   @default("Asia/Ho_Chi_Minh")
+  preferredPublishTimes String?  @db.Text // JSON array
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  website Website @relation(fields: [websiteId], references: [id])
+
+  @@map("website_configs")
+}
+
+model Schedule {
+  id          String         @id @default(uuid())
+  contentId   String
+  websiteId   String
+  scheduledAt DateTime
+  status      ScheduleStatus @default(PENDING)
+  priority    Priority       @default(NORMAL)
+  retryCount  Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  content Content @relation(fields: [contentId], references: [id])
+  website Website @relation(fields: [websiteId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  userId  String
+  logs    PublishingLog[]
+
+  @@map("schedules")
+}
+
+enum ScheduleStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+enum Priority {
+  HIGH
+  NORMAL
+  LOW
+}
+
+model PublishingLog {
+  id              String   @id @default(uuid())
+  scheduleId      String
+  status          String
+  publishedUrl    String?
+  publishedPostId String?
+  requestPayload  String?  @db.Text
+  responsePayload String?  @db.Text
+  errorMessage    String?  @db.Text
+  executionTime   Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id])
+
+  @@map("publishing_logs")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  isRead    Boolean          @default(false)
+  metadata  String?          @db.Text // JSON
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  PUBLISH_SUCCESS
+  PUBLISH_FAILED
+  SCHEDULE_SUMMARY
+  SYSTEM
+}
+```
+
+---
+
+## 🎨 FRONTEND COMPONENTS
+
+### **1. Sidebar Component**
+
+```tsx
+// src/components/layout/Sidebar.tsx
+
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Badge } from '@/components/ui/badge'
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Globe, 
+  Calendar, 
+  Rocket, 
+  Sparkles, 
+  BarChart3, 
+  Bell, 
+  Settings 
+} from 'lucide-react'
+
+const menuItems = [
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+  { icon: FileText, label: 'Nội dung', href: '/content', badge: 42 },
+  { icon: Globe, label: 'Website', href: '/websites', badge: 8 },
+  { icon: Calendar, label: 'Lên lịch', href: '/scheduling', badge: 24 },
+  { icon: Rocket, label: 'Đăng bài', href: '/publishing', badge: 5, badgeVariant: 'destructive' },
+  { icon: Sparkles, label: 'SEO', href: '/seo' },
+  { icon: BarChart3, label: 'Báo cáo', href: '/analytics' },
+  { icon: Bell, label: 'Thông báo', href: '/notifications', badge: 12 },
+  { icon: Settings, label: 'Cài đặt', href: '/settings' },
+]
+
+export function Sidebar() {
+  const pathname = usePathname()
+
+  return (
+    <div className="w-64 h-screen bg-white border-r border-gray-200 fixed left-0 top-0">
+      {/* Header */}
+      <div className="h-16 border-b border-gray-200 flex items-center px-6">
+        <h1 className="text-xl font-bold">MKT Seo Web</h1>
+      </div>
+
+      {/* Menu */}
+      <nav className="p-4 space-y-1">
+        {menuItems.map((item) => {
+          const isActive = pathname === item.href
+          const Icon = item.icon
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`
+                flex items-center justify-between px-4 py-3 rounded-lg
+                transition-colors
+                ${isActive 
+                  ? 'bg-blue-500 text-white' 
+                  : 'text-gray-700 hover:bg-gray-100'
+                }
+              `}
+            >
+              <div className="flex items-center gap-3">
+                <Icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </div>
+              {item.badge && (
+                <Badge variant={item.badgeVariant || 'secondary'}>
+                  {item.badge}
+                </Badge>
+              )}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <span>v1.0</span>
+          <button className="p-2 hover:bg-gray-100 rounded">🌙</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+### **2. Main Layout**
+
+```tsx
+// src/app/(dashboard)/layout.tsx
+
+import { Sidebar } from '@/components/layout/Sidebar'
+import { Header } from '@/components/layout/Header'
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 ml-64">
+        <Header />
+        <main className="p-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}
+```
+
+### **3. Header Component**
+
+```tsx
+// src/components/layout/Header.tsx
+
+'use client'
+
+import { Search, User } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+
+export function Header() {
+  return (
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+      <div className="flex-1 max-w-md">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input 
+            placeholder="Tìm kiếm..." 
+            className="pl-10"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <button className="p-2 hover:bg-gray-100 rounded-full">
+          <User className="w-6 h-6" />
+        </button>
+      </div>
+    </header>
+  )
+}
+```
+
+---
+
+## 🔧 BACKEND API STRUCTURE
+
+### **1. Main Server File**
+
+```typescript
+// backend/src/server.ts
+
+import express from 'express'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import authRoutes from './modules/auth/auth.routes'
+import contentRoutes from './modules/content/content.routes'
+import websiteRoutes from './modules/website/website.routes'
+import scheduleRoutes from './modules/schedule/schedule.routes'
+import publishingRoutes from './modules/publishing/publishing.routes'
+
+dotenv.config()
+
+const app = express()
+const PORT = process.env.PORT || 4000
+
+// Middleware
+app.use(cors())
+app.use(express.json())
+
+// Routes
+app.use('/api/auth', authRoutes)
+app.use('/api/contents', contentRoutes)
+app.use('/api/websites', websiteRoutes)
+app.use('/api/schedules', scheduleRoutes)
+app.use('/api/publishing', publishingRoutes)
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK' })
+})
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
+```
+
+### **2. Example Controller**
+
+```typescript
+// backend/src/modules/content/content.controller.ts
+
+import { Request, Response } from 'express'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+export class ContentController {
+  async getAll(req: Request, res: Response) {
+    try {
+      const contents = await prisma.content.findMany({
+        include: {
+          user: true,
+          categories: true,
+          tags: true
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      res.json(contents)
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch contents' })
+    }
+  }
+
+  async create(req: Request, res: Response) {
+    try {
+      const content = await prisma.content.create({
+        data: req.body
+      })
+      res.status(201).json(content)
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to create content' })
+    }
+  }
+
+  async getById(req: Request, res: Response) {
+    try {
+      const content = await prisma.content.findUnique({
+        where: { id: req.params.id },
+        include: {
+          categories: true,
+          tags: true,
+          media: true
+        }
+      })
+      if (!content) {
+        return res.status(404).json({ error: 'Content not found' })
+      }
+      res.json(content)
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch content' })
+    }
+  }
+
+  async update(req: Request, res: Response) {
+    try {
+      const content = await prisma.content.update({
+        where: { id: req.params.id },
+        data: req.body
+      })
+      res.json(content)
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update content' })
+    }
+  }
+
+  async delete(req: Request, res: Response) {
+    try {
+      await prisma.content.delete({
+        where: { id: req.params.id }
+      })
+      res.status(204).send()
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete content' })
+    }
+  }
+}
+```
+
+---
+
+## 📦 PACKAGE.JSON FILES
+
+### **Frontend package.json**
+
+```json
+{
+  "name": "mkt-seo-web-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.0.0",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "lucide-react": "^0.294.0",
+    "tailwind-merge": "^2.0.0",
+    "tailwindcss-animate": "^1.0.7",
+    "axios": "^1.6.0",
+    "react-hook-form": "^7.48.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6"
+  }
+}
+```
+
+### **Backend package.json**
+
+```json
+{
+  "name": "mkt-seo-web-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "@prisma/client": "^5.7.0",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "bull": "^4.12.0",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.10.0",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
+    "typescript": "^5.3.0",
+    "tsx": "^4.7.0",
+    "prisma": "^5.7.0"
+  }
+}
+```
+
+---
+
+## 🐳 DOCKER COMPOSE
+
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: mkt_user
+      POSTGRES_PASSWORD: mkt_password
+      POSTGRES_DB: mkt_seo_web
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://mkt_user:mkt_password@postgres:5432/mkt_seo_web
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: your-super-secret-jwt-key
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+```
+
+---
+
+## 🔐 ENVIRONMENT FILES
+
+### **Frontend .env.local**
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_APP_NAME=MKT Seo Web
+```
+
+### **Backend .env**
+
+```env
+NODE_ENV=development
+PORT=4000
+
+DATABASE_URL=postgresql://mkt_user:mkt_password@localhost:5432/mkt_seo_web
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_EXPIRES_IN=7d
+```
+
+---
+
+## 📝 YÊU CẦU TẠO DỰ ÁN
+
+### **Bước 1: Tạo cấu trúc thư mục**
+Tạo đầy đủ cấu trúc thư mục như mô tả ở trên
+
+### **Bước 2: Setup Frontend**
+- Khởi tạo Next.js 14 với App Router
+- Cài đặt TailwindCSS
+- Cài đặt Shadcn/ui components: button, card, input, table, tabs, badge, dialog
+- Tạo Sidebar component với menu items như đã mô tả
+- Tạo MainLayout với Sidebar + Header
+- Tạo các trang cơ bản: Dashboard, Content, Websites, Scheduling, Publishing, SEO, Analytics, Notifications, Settings
+
+### **Bước 3: Setup Backend**
+- Khởi tạo Express server với TypeScript
+- Setup Prisma với schema đã cho
+- Tạo các module: auth, content, website, schedule, publishing
+- Mỗi module có: controller, service, routes
+- Setup middleware: auth, error handling
+- Setup JWT authentication
+
+### **Bước 4: Database**
+- Tạo file schema.prisma với đầy đủ models
+- Setup connection string
+- Tạo migration ban đầu
+
+### **Bước 5: Docker**
+- Tạo docker-compose.yml cho PostgreSQL và Redis
+- Tạo Dockerfile cho frontend và backend (optional)
+
+### **Bước 6: UI Components cần có**
+- Sidebar với 9 menu items
+- Header với search bar
+- Dashboard page với metrics cards
+- Content list page với table
+- Empty states
+- Loading spinners
+- Basic forms
+
+---
+
+## 🎯 CHỨC NĂNG CƠ BẢN CẦN HOẠT ĐỘNG
+
+1. **Authentication:**
+   - Login/Logout
+   - JWT token management
+   - Protected routes
+
+2. **Content Management:**
+   - List all contents
+   - Create new content
+   - View content detail
+   - Edit content
+   - Delete content
+
+3. **Website Management:**
+   - List websites
+   - Add new website
+   - Test connection
+   - View website stats
+
+4. **Basic UI:**
+   - Sidebar navigation working
+   - Routing between pages
+   - Responsive layout
+   - Loading states
+   - Error handling
+
+---
+
+## 📌 LƯU Ý QUAN TRỌNG
+
+1. **TypeScript:** Tất cả code phải dùng TypeScript
+2. **Styling:** Dùng TailwindCSS, không dùng CSS modules
+3. **Components:** Sử dụng Shadcn/ui cho UI components
+4. **API:** RESTful API với proper status codes
+5. **Error Handling:** Có try-catch và error messages
+6. **Validation:** Validate input ở cả frontend và backend
+7. **Security:** Hash passwords, validate JWT tokens
+8. **Clean Code:** Có comments, tên biến rõ ràng
+
+---
+
+Đây là mô tả đầy đủ để Replit Agent có thể tạo dự án. Bạn copy toàn bộ nội dung này và paste vào Replit Agent!
