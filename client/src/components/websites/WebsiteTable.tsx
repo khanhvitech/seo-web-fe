@@ -57,7 +57,6 @@ export function WebsiteTable({
 }: WebsiteTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("all");
-  const [selectedPlatform, setSelectedPlatform] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
@@ -74,30 +73,13 @@ export function WebsiteTable({
     }
   };
 
-  const getPlatformBadge = (platform: string) => {
-    const platformConfig = {
-      wordpress: { label: "WordPress", variant: "default" as const },
-      blogger: { label: "Blogger", variant: "secondary" as const },
-      joomla: { label: "Joomla", variant: "outline" as const },
-      custom: { label: "Custom", variant: "destructive" as const },
-    };
-    
-    const config = platformConfig[platform as keyof typeof platformConfig] || {
-      label: platform,
-      variant: "secondary" as const,
-    };
-    
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
-
   const filteredWebsites = websites.filter((website) => {
     const matchesSearch = website.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          website.url.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGroup = selectedGroup === "all" || website.group_id === selectedGroup;
-    const matchesPlatform = selectedPlatform === "all" || website.platform === selectedPlatform;
     const matchesStatus = selectedStatus === "all" || website.status === selectedStatus;
     
-    return matchesSearch && matchesGroup && matchesPlatform && matchesStatus;
+    return matchesSearch && matchesGroup && matchesStatus;
   });
 
   const handleSelectAll = (checked: boolean) => {
@@ -117,7 +99,6 @@ export function WebsiteTable({
   };
 
   const groups = Array.from(new Set(websites.map(w => ({ id: w.group_id, name: w.group_name }))));
-  const platforms = Array.from(new Set(websites.map(w => w.platform)));
 
   return (
     <div className="space-y-4">
@@ -142,20 +123,6 @@ export function WebsiteTable({
             {groups.map((group) => (
               <SelectItem key={group.id} value={group.id}>
                 📁 {group.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Platform" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            {platforms.map((platform) => (
-              <SelectItem key={platform} value={platform}>
-                {platform}
               </SelectItem>
             ))}
           </SelectContent>
@@ -227,7 +194,6 @@ export function WebsiteTable({
               <TableHead className="w-16">Status</TableHead>
               <TableHead>Website</TableHead>
               <TableHead>Nhóm</TableHead>
-              <TableHead>Platform</TableHead>
               <TableHead>Health</TableHead>
               <TableHead>Last Check</TableHead>
               <TableHead>Posts</TableHead>
@@ -263,9 +229,6 @@ export function WebsiteTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">📁 {website.group_name}</Badge>
-                </TableCell>
-                <TableCell>
-                  {getPlatformBadge(website.platform)}
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">

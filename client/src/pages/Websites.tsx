@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Website, HealthStats, SiteGroup } from "@/types/website";
 import { WebsiteStatsCards } from "@/components/websites/WebsiteStatsCards";
 import { WebsiteTable } from "@/components/websites/WebsiteTable";
-import { AddWebsiteModal } from "@/components/websites/AddWebsiteModal";
+import { SimpleWebsiteModal } from "@/components/websites/WordPressModal";
 import { WebsiteGroupSidebar } from "@/components/websites/WebsiteGroupSidebar";
 import { HealthMonitoring } from "@/components/websites/HealthMonitoring";
 import { WebsiteStatistics } from "@/components/websites/WebsiteStatistics";
@@ -245,30 +245,34 @@ export default function Websites() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">🌐 Quản lý Websites</h1>
-            <p className="text-muted-foreground">
-              Quản lý và giám sát tất cả websites của bạn
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCreateGroup}>
-              <Users className="w-4 h-4 mr-2" />
-              Tạo Nhóm
-            </Button>
-            <Button onClick={handleAddWebsite}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm Website
-            </Button>
+      <div className="flex-1 flex flex-col">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-10 bg-background border-b border-border pb-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">🌐 Quản lý Websites</h1>
+              <p className="text-muted-foreground">
+                Quản lý và giám sát tất cả websites của bạn
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleCreateGroup}>
+                <Users className="w-4 h-4 mr-2" />
+                Tạo Nhóm
+              </Button>
+              <Button onClick={handleAddWebsite} className="shadow-lg">
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm Website
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-auto space-y-6">
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">📊 Tổng quan</TabsTrigger>
             <TabsTrigger value="monitoring">🔍 Giám sát</TabsTrigger>
@@ -324,15 +328,14 @@ export default function Websites() {
 
         {/* Website Form Modal */}
         {showForm && (
-          <AddWebsiteModal
+          <SimpleWebsiteModal
+            open={showForm}
+            onOpenChange={setShowForm}
             website={editingWebsite}
             onSave={handleSaveWebsite}
-            onClose={() => {
-              setShowForm(false);
-              setEditingWebsite(undefined);
-            }}
           />
         )}
+        </div>
       </div>
     </div>
   );

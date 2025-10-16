@@ -8,9 +8,10 @@ import { AutoSources } from "../components/content/AutoSources";
 import { AIImageGenerator } from "../components/content/AIImageGenerator";
 import { ContentRewriter } from "../components/content/ContentRewriter";
 import { AIContentGenerator } from "../components/content/AIContentGenerator";
+import { ExcelImport } from "../components/content/ExcelImport";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, FolderOpen } from "lucide-react";
+import { Plus, FolderOpen, FileSpreadsheet } from "lucide-react";
 
 // Mock data for testing
 const mockContents = [
@@ -83,11 +84,18 @@ export default function Content() {
   const [activeView, setActiveView] = useState('all-content');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+  const [showExcelImport, setShowExcelImport] = useState(false);
   const [editingContent, setEditingContent] = useState<any>(null);
+  const [contents, setContents] = useState(mockContents);
 
   const handleEdit = (content: any) => {
     setEditingContent(content);
     setShowCreateForm(true);
+  };
+
+  const handleExcelImport = (importedContents: any[]) => {
+    setContents(prev => [...prev, ...importedContents]);
+    setShowExcelImport(false);
   };
 
   const renderMainContent = () => {
@@ -106,6 +114,10 @@ export default function Content() {
                   <FolderOpen className="w-4 h-4 mr-2" />
                   Quản lý danh mục
                 </Button>
+                <Button variant="outline" onClick={() => setShowExcelImport(true)}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Import từ Excel
+                </Button>
                 <Button onClick={() => setShowCreateForm(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Tạo nội dung mới
@@ -113,7 +125,7 @@ export default function Content() {
               </div>
             </div>
             <ContentTable 
-              contents={mockContents} 
+              contents={contents} 
               onEdit={handleEdit}
             />
           </div>
@@ -182,6 +194,13 @@ export default function Content() {
           <CategoriesManagement />
         </DialogContent>
       </Dialog>
+
+      {/* Excel Import Modal */}
+      <ExcelImport 
+        open={showExcelImport} 
+        onOpenChange={setShowExcelImport}
+        onImport={handleExcelImport}
+      />
     </div>
   );
 }
